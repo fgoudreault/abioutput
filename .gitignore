@@ -1,0 +1,29 @@
+########################
+# Editor temporary files
+*.swp
+.~lock*
+
+# excel files
+# ###########
+*.xlsx
+
+# Compiled source
+#################
+*.exe
+*.py[ocd]
+*.zip
+
+# Python files
+##############
+build
+*.spec
+dist
+*.egg-info
+.eggs
+
+# test files
+# ##########
+.coverage
+htmlcov/
+cover/
+cache/
