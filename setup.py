@@ -2,7 +2,7 @@ from setuptools import setup
 import pip
 
 
-install_requires = ["abipy", ]
+install_requires = ["abipy", "pint"]
 
 # check if abipy is installed
 try:
