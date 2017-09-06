@@ -17,5 +17,8 @@ mu_0 = 4 * pi * 10 ** (-7) * ureg.newton / ureg.ampere ** 2
 epsilon_0 = 1 / (mu_0 * c ** 2)
 mu_B = e * hbar / (2 * m_e)
 FINE_STRUCTURE_CONSTANT = mu_0 * e ** 2 * c / (2 * h)
-RYDBERG = FINE_STRUCTURE_CONSTANT ** 2 * m_e * c / (2 * h)
+RYDBERG = FINE_STRUCTURE_CONSTANT ** 2 * m_e * c / (2 * h)  # Joules
 BOHR_RADIUS = FINE_STRUCTURE_CONSTANT / (4 * pi * RYDBERG)
+
+HARTREE_TO_JOULES = 2 * RYDBERG
+HARTREE_TO_KELVIN = HARTREE_TO_JOULES / k_B
