@@ -18,7 +18,12 @@ class DOSParser:
 
         for i, line in enumerate(lines):
             if not line.startswith("#"):
-                titlesline = lines[i - 2]
+                titleindex = i - 1
+                while "energy" not in lines[titleindex]:
+                    titleindex -= 1
+                    if titleindex <= 0:
+                        raise LookupError("Could not find the title line!")
+                titlesline = lines[titleindex].strip("\n").strip("#")
                 # titlesline2 = lines[i - 1]
                 break
         else:
