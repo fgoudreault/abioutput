@@ -50,6 +50,8 @@ class Bandstructure:
         labels, labels_loc = self._get_sym_pts_labels(symmetry)
         ax.set_xticks(labels_loc, labels)
         ax.set_ylabel("Energy")
+        if self.fermi_energy:
+            ax.set_title(r"$E_F=%f$" % self.fermi_energy)
 
         if save_at is not None:
             fig.savefig(save_at)
