@@ -1,5 +1,5 @@
 from abipy.abio.outputs import AbinitOutputFile
-from .dtset_parser import DtsetParser
+from .output_subparsers import DtsetParser
 from .abinit_vars import AbinitVarStrToNum
 from collections import OrderedDict
 
