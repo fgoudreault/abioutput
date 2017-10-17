@@ -18,7 +18,7 @@ class Bandstructure:
         self.kpts = kpts
         self.eigenvalues = eigenvalues
         self.bands = self._get_bands(eigenvalues)
-        self.fermi_band = int(fermi_band)
+        self.fermi_band = fermi_band
         self.fermi_energy = 0
         if self.fermi_band is not None:
             self.fermi_energy = max(self.bands[self.fermi_band])
@@ -81,11 +81,12 @@ class Bandstructure:
             eigenvalues = np.array(eigenvalues)
 
         bands = eigenvalues.T
-        return bands.tolist()
+        return bands
 
     @classmethod
     def from_file(cls, path, fermi_band=None):
         eigparser = EIGParser.from_file(path)
-        coordinates = eigparser.data["coordinates"]
-        eigenvalues = eigparser.data["eigenvalues"]
-        return cls(coordinates, eigenvalues, fermi_band=fermi_band)
+        kptslist = eigparser.data
+        kpts = [x["coordinates"] for x in kptslist]
+        eigenvalues = [x["eigenvalues"] for x in kptslist]
+        return cls(kpts, eigenvalues, fermi_band=fermi_band)
