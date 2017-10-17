@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from abioutput import EIGParser
 
 
 HIGH_SYM_PTS = {"FCC": {"L": (0.5, 0.0, 0.0),
@@ -81,3 +82,10 @@ class Bandstructure:
 
         bands = eigenvalues.T
         return bands.tolist()
+
+    @classmethod
+    def from_file(cls, path, fermi_band=None):
+        eigparser = EIGParser.from_file(path)
+        coordinates = eigparser.data["coordinates"]
+        eigenvalues = eigparser.data["eigenvalues"]
+        return cls(coordinates, eigenvalues, fermi_band=fermi_band)

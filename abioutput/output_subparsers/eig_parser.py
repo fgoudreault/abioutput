@@ -116,4 +116,4 @@ class EIGParser(BaseSubParser):
             lines = f.readlines()
         # preprocess lines
         lines = cls.preprocess_lines(lines)
-        return cls(lines)
+        return cls(lines, check_loi=False)
