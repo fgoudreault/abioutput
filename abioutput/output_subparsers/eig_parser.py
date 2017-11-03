@@ -10,7 +10,7 @@ class EIGParser(BaseSubParser):
 
     def __init__(self, lines, loglevel=logging.INFO, check_loi=True):
         super().__init__(loglevel=loglevel)
-        self._logger.debug("##########  GETTING EIGENVALUES  #########\n")
+        self._logger.debug("\n##########  GETTING EIGENVALUES  #########")
         # if check_loi, find the ending of the loi
         if check_loi:
             loi = self._get_loi(lines)
@@ -19,6 +19,7 @@ class EIGParser(BaseSubParser):
             self._ending_relative_index = len(lines) - 1
         self.data = None
         if loi is not None:
+            self._logger.debug("%i eigenvalues line to parse." % len(loi))
             self.data = self._get_data(loi)
         self._logger.debug("Eigenvalues done.")
 
@@ -60,53 +61,70 @@ class EIGParser(BaseSubParser):
 
     def _get_eigs(self, lines):
         # get eigenvalues data
-        data = []
+        data = {"coordinates": [],
+                "eigenvalues": [],
+                "occupations": [],
+                "nbands": None,
+                "units": None}
         # units in first line inside parenthesis
         splitted = lines[0].split("(")[1].split(")")[0].split(" ")
         units = list(filter(lambda x: x != "", splitted))[0]
+        data["units"] = units
         loi = lines[1:]
-        for i, line in enumerate(loi):
-            if line.startswith("kpt#"):
-                nextline = i + 1
-                eigs = []
-                # get kpt coordinates
-                splitted = line.split(" ")
-                filtered = list(filter(lambda xx: xx != '', splitted))
-                coord = [float(filtered[-5]),
-                         float(filtered[-4]),
-                         float(filtered[-3])]
 
-                # get eigenvalues for this kpt
-                while not ("kpt#" in loi[nextline] or
-                           "occupation numbers" in loi[nextline]):
-                    s, i, f = decompose_line(loi[nextline])
-                    eigs.extend(f)
-                    nextline += 1
-                    if nextline == len(loi):
-                        # reached the end of eigenvalues
-                        break
+        # get eigenvalues
+        nlines = len(loi)
+        lines_for_10percent = nlines // 10
+        skip = 0
+
+        for i, line in enumerate(loi):
+            if not i % lines_for_10percent:
+                self._logger.debug("EIG progression : %.1f / 100" %
+                                   (i / nlines * 100))
+            if i < skip:
+                continue
+            if line.startswith("kpt#"):
+                coord = self._get_kpt_coord(line)
+                data["coordinates"].append(coord)
+                block = self._get_next_number_block(loi[i + 1:])
+                eigs = self._get_data_from_block(block)
+                data["eigenvalues"].append(eigs)
+
+                skip = i + len(block) + 1
                 if not len(eigs):
                     self._logger.debug("No eigenvalues found for coord: %s" %
                                        str(coord))
-                kpt = {"coordinates": coord,
-                       "eigenvalues": eigs,
-                       "nband": len(eigs),
-                       "units": units}
-                data.append(kpt)
-            if "occupation numbers" in line:
+            elif "occupation numbers" in line:
                 # occupation numbers are specified inside the eigenvalues
                 # we need to append this info to the last kpt dict
-                nextline = i + 1
-                occupations = []
-                while "kpt# " not in loi[nextline]:
-                    s, i, f = decompose_line(loi[nextline])
-                    occupations.extend(f)
-                    nextline += 1
-                    if nextline == len(loi):
-                        # we reached the end of the lines
-                        break
-                data[-1]["occupation"] = occupations
+                block = self._get_next_number_block(loi[i + 1:])
+                data["occupations"].append(self._get_data_from_block(block))
+                skip = i + len(block) + 1
+        data["nbands"] = len(data["eigenvalues"][0])
         return data
+
+    def _get_data_from_block(self, block):
+        data = []
+        for line in block:
+            s, i, f = decompose_line(line)
+            data.extend(f)
+        return data
+
+    def _get_next_number_block(self, loi):
+        # get next eigenvalues block
+        for i, line in enumerate(loi):
+            if "kpt#" in line or "occupation numbers" in line:
+                return loi[:i]
+        # if at the end, return the whole thing
+        return loi
+
+    def _get_kpt_coord(self, line):
+            # get kpt coordinates
+            splitted = line.split(" ")
+            filtered = list(filter(lambda xx: xx != '', splitted))
+            return [float(filtered[-5]),
+                    float(filtered[-4]),
+                    float(filtered[-3])]
 
     @classmethod
     def from_file(cls, path):

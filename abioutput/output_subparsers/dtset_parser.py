@@ -41,28 +41,28 @@ class DtsetParser(BaseSubParser):
         data = {}
         # extract data from dtset
         skip = 0
+        subparsers = SubParsersList(SUBPARSERS)
         for index, line in enumerate(lines):
             if index < skip:
                 # don't work on this line
                 continue
-            subparsers = SubParsersList(SUBPARSERS)
             for trigger, subparser in subparsers.items():
                 if trigger in line:
                     # this line is a trigger for the subparser to work
                     # parse the rest of the lines from here
-                    s = subparser(lines[index:], loglevel=self.logger.level)
+                    s = subparser(lines[index:], loglevel=self._logger.level)
                     data[s.subject] = s.data
                     # remove the subparser from the list to not parse again
                     subparsers.remove(subparser)
                     # modify the skip to not reparse the parsed lines
-                    skip = index + subparser.ending_relative_index
+                    skip = index + s.ending_relative_index
                     # stop parsing the active line
                     break
         return data
 
     @classmethod
-    def from_string(cls, string):
+    def from_string(cls, string, **kwargs):
         """Parses a dtset from a single string instead of a list of lines.
         """
         lines = string.split("\n")
-        return cls(lines)
+        return cls(lines, **kwargs)
