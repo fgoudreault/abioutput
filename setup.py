@@ -8,7 +8,7 @@ install_requires = ["abipy", "pint"]
 try:
     abipyexists = True
     import abipy  # noqa
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     abipyexists = False
     print("Abipy is not installed: preparing its installation...")
     # abipy is not installed => install it
