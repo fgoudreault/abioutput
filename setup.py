@@ -3,6 +3,8 @@ import pip
 
 
 install_requires = ["abipy", "pint"]
+# need dev version
+abipy = "https://github.com/abinit/abipy/archive/develop.zip"
 
 # check if abipy is installed
 try:
@@ -19,7 +21,8 @@ except (ImportError, ModuleNotFoundError):
 
 setup(name="abioutput",
       description="Python package to ease reading abinit output using abipy.",
-      install_requires=install_requires)
+      install_requires=install_requires,
+      dependency_links=[abipy])
 
 if not abipyexists:
     print("Abipy has been installed and needs the manager.yml"
