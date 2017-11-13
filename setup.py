@@ -2,9 +2,10 @@ from setuptools import setup
 import pip
 
 
-install_requires = ["abipy", "pint"]
+install_requires = [  # "abipy",
+                    "pint"]
 # need dev version
-abipy = "https://github.com/abinit/abipy/archive/develop.zip"
+abipy_git = ("git+git://github.com/abinit/abipy@develop#egg=abipy")
 
 # check if abipy is installed
 try:
@@ -16,13 +17,15 @@ except (ImportError, ModuleNotFoundError):
     # abipy is not installed => install it
     # to install abipy we need to install all those packages manually using pip
     for module in ("numpy", "matplotlib", "netcdf4",
-                   "pandas", "pymatgen", "scipy"):
+                   "pandas", "pymatgen", "scipy", "abipy"):
+        if module == "abipy":
+            module = abipy_git
         pip.main(["install", module])
 
 setup(name="abioutput",
       description="Python package to ease reading abinit output using abipy.",
       install_requires=install_requires,
-      dependency_links=[abipy])
+      )
 
 if not abipyexists:
     print("Abipy has been installed and needs the manager.yml"
