@@ -9,6 +9,9 @@ class EIGParser(BaseSubParser):
     subject = "eigenvalues"
 
     def __init__(self, lines, loglevel=logging.INFO, check_loi=True):
+        """Normally called from the AbinitOutput class but can also be called
+        directly onto an EIG file with the from_file classmethod.
+        """
         super().__init__(loglevel=loglevel)
         self._logger.debug("\n##########  GETTING EIGENVALUES  #########")
         # if check_loi, find the ending of the loi
