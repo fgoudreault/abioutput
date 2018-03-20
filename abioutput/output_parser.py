@@ -7,6 +7,11 @@ import logging
 
 class OutputParser(AbinitOutputFile):
     """An ABINIT output file parser that gets data from an output file.
+    
+    Parameters
+    ----------
+    filepath : str
+               The path to the output file.
     """
     def __init__(self, *args, loglevel=logging.INFO, **kwargs):
         logging.basicConfig()
