@@ -1,6 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from abioutput import EIGParser
+from .plot import Plot
 
 
 HIGH_SYM_PTS = {"FCC": {"L": (0.5, 0.0, 0.0),
@@ -43,8 +43,9 @@ class Bandstructure:
             self.fermi_energy = max(self.bands[self.fermi_band])
 
     def plot(self, bands=None, symmetry="none",
-             color="k", save_at=None, show=True,
-             other_k_labels=None):
+             line_at_zero=True,
+             save_at=None, show=True,
+             other_k_labels=None, **kwargs):
         """Plot the bandstructure.
 
         Parameters
@@ -53,10 +54,8 @@ class Bandstructure:
                   Gives the crystal symmetry of the structure. This will
                   able the labelling of the high symmetry points in the
                   Brillouin Zone.
-        color: str, optional
-               Gives the line color of the bandstructure. If set to None,
-               the color won't be set and it will be a standard multi curve
-               pyplot.
+        line_at_zero: bool, optional
+                      If True, a line is drawn at 0 energy.
         bands: list, optional
                Selects the range of bands to plot (starting from 0).
                If set to None, all bands are shown.
@@ -64,30 +63,29 @@ class Bandstructure:
                  If not None, gives the path to where the figure will be saved.
         show: bool, optional
               If True, the plot will be shown.
+        kwargs : All other arguments are passed to the Plot class.
         """
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
         considered_bands = self.bands
         fermi_energy = self.fermi_energy
         if self.fermi_energy is None:
             fermi_energy = 0
+        horizontal_lines = []
+        if line_at_zero:
+            horizontal_lines.append(0)
         if bands is not None:
             considered_bands = self.bands[range(bands[0], bands[1] + 1), :]
-        for band in considered_bands:
-            if color is not None:
-                ax.plot(band - fermi_energy, color=color)
-            else:
-                ax.plot(band - fermi_energy)
+        ys = considered_bands - fermi_energy
+        xs = list(range(len(self.kpts)))
         labels, labels_loc = self._get_sym_pts_labels(symmetry)
-        ax.set_xticks(labels_loc, labels)
-        ax.set_ylabel("Energy")
-        if self.fermi_energy:
-            ax.set_title(r"$E_F=%f$" % self.fermi_energy)
-
-        if save_at is not None:
-            fig.savefig(save_at)
+        xtickslabels = [(pos, label) for pos, label in zip(labels_loc, labels)]
+        plot = Plot(xs, ys, xticks_labels=xtickslabels,
+                    horizontal_lines=horizontal_lines,
+                    **kwargs)
         if show:
-            plt.show()
+            plot.plot()
+        if save_at is not None:
+            plot.save(save_at)
+        return plot
 
     def _get_sym_pts_labels(self, symmetry):
         labels = []
