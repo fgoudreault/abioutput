@@ -1,6 +1,6 @@
 from abipy.abio.outputs import AbinitOutputFile
 from .output_subparsers import DtsetParser
-from .abinit_vars import AbinitVarStrToNum
+from .utils.abinit_vars import AbinitVarStrToNum
 from collections import OrderedDict
 import logging
 

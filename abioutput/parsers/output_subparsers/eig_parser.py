@@ -1,5 +1,5 @@
 from .base import BaseSubParser
-from .._common_routines import decompose_line
+from ..utils._common_routines import decompose_line
 import logging
 
 
