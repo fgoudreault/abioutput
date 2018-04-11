@@ -1,5 +1,5 @@
 from .parsers import (OutputParser, LogParser, DOSParser, SelfEnergyParser, 
                       plot_self_energy, EIGParser)
-from .parsers.dmft import DMFTEigParser
+from .parsers.dmft import DMFTEigParser, DMFTProjectorsParser
 from .constants import *
 from .bandstructure import Bandstructure

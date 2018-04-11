@@ -1,1 +1,2 @@
-from .dmft_eig_parser import DMFT_eig_parser
+from .dmft_eig_parser import DMFTEigParser
+from .dmft_projectors_parser import DMFTProjectorsParser
