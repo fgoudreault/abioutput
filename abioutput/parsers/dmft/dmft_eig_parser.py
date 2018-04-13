@@ -7,7 +7,7 @@ class DMFTEigParser(DataFileParser):
     """Class that reads a .eig file produced by the DMFT module of Abinit.
     """
     _loggername = "DMFT_eig_parser"
-    
+
     def __init__(self, *args, **kwargs):
         """The .eig file parser init method.
 

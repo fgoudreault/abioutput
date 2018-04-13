@@ -6,11 +6,11 @@ def decompose_line(line):
     # varname         value
     # value
     # _logger.debug("Decomposing line %s" % line)
-    l = line.split(" ")
+    splitted = line.split(" ")
     strings = []
     ints = []
     floats = []
-    for element in l:
+    for element in splitted:
         try:
             if element == "":
                 # drop the empty strings
@@ -77,7 +77,7 @@ def try_debug_2floats(string):
     try:
         f1 = float(f1)
         f2 = float(f2)
-    except:
+    except Exception:
         print("%s could not be decomposed into 2 floats." % string)
         return None, None
     else:

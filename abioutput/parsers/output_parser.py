@@ -19,7 +19,7 @@ class OutputParser(AbinitOutputFile, BaseParser):
     def __init__(self, *args, **kwargs):
         BaseParser.__init__(self, kwargs.pop("loglevel", logging.INFO))
         AbinitOutputFile.__init__(self, *args, **kwargs)
-        
+
         self.data_per_dtset = self._get_data_per_dtset()
         self._output_vars_global = None
         self._output_vars_dataset = None
