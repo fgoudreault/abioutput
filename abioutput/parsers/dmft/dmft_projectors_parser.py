@@ -1,14 +1,14 @@
 import numpy as np
-from .bases import DMFTBaseParser
+from ..bases import DataFileParser
 from ..utils._common_routines import decompose_line
 
 
-class DMFTProjectorsParser(DMFTBaseParser):
+class DMFTProjectorsParser(DataFileParser):
     """Parser to read projectors files.
     """
     _loggername = "DMFTProjectorsParser"
 
-    def __init__(self, path, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Projectors parser init method.
 
         Projectors are stored in the `data` attribute as an array of size:
@@ -19,9 +19,11 @@ class DMFTProjectorsParser(DMFTBaseParser):
         ----------
         path : str
                The path to the projectors file.
+        loglevel : int, optional
+                   The logging level.
         """
-        super().__init__(path, **kwargs)
-        self.data = self._read_data_from_file(path)
+        super().__init__(*args, **kwargs)
+        self.data = self._read_data_from_file(self.filepath)
 
     def _read_data_from_file(self, path):
         self._logger.info("Extracting data from %s" % path)

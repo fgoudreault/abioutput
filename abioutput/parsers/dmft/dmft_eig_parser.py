@@ -1,23 +1,25 @@
 import numpy as np
-from .bases import DMFTBaseParser
+from ..bases import DataFileParser
 from ..utils._common_routines import decompose_line
 
 
-class DMFTEigParser(DMFTBaseParser):
+class DMFTEigParser(DataFileParser):
     """Class that reads a .eig file produced by the DMFT module of Abinit.
     """
     _loggername = "DMFT_eig_parser"
     
-    def __init__(self, path, **kwargs):
+    def __init__(self, *args, **kwargs):
         """The .eig file parser init method.
 
         Parameters
         ----------
         path : str
                The path to the .eig file.
+        loglevel : int, optional
+                   The logging level.
         """
-        super().__init__(path, **kwargs)
-        self.data = self._read_data_from_file(path)
+        super().__init__(*args, **kwargs)
+        self.data = self._read_data_from_file(self.filepath)
 
     def _read_data_from_file(self, path):
         self._logger.info("Extracting eigenvalues from %s" % path)
