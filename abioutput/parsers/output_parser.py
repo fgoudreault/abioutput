@@ -1,12 +1,12 @@
 from abipy.abio.outputs import AbinitOutputFile
-from .bases import BaseParser
+from ..bases import BaseUtility
 from .output_subparsers import DtsetParser
 from .utils.abinit_vars import AbinitVarStrToNum
 from collections import OrderedDict
 import logging
 
 
-class OutputParser(AbinitOutputFile, BaseParser):
+class OutputParser(AbinitOutputFile, BaseUtility):
     """An ABINIT output file parser that gets data from an output file.
 
     Parameters
@@ -17,7 +17,7 @@ class OutputParser(AbinitOutputFile, BaseParser):
     _loggername = "OutputParser"
 
     def __init__(self, *args, **kwargs):
-        BaseParser.__init__(self, kwargs.pop("loglevel", logging.INFO))
+        BaseUtility.__init__(self, kwargs.pop("loglevel", logging.INFO))
         AbinitOutputFile.__init__(self, *args, **kwargs)
 
         self.data_per_dtset = self._get_data_per_dtset()

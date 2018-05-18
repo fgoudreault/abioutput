@@ -1,22 +1,8 @@
-import abc
-import logging
+from ..bases import BaseUtility
 import os
 
 
-class BaseParser(abc.ABC):
-
-    def __init__(self, loglevel=logging.WARNING):
-        logging.basicConfig()
-        self._logger = logging.getLogger(self._loggername)
-        self._logger.setLevel(loglevel)
-
-    @property
-    @abc.abstractmethod
-    def _loggername(self):
-        pass
-
-
-class BaseParserPathChecker(BaseParser):
+class BaseParserPathChecker(BaseUtility):
     def __init__(self, path, **kwargs):
         super().__init__(**kwargs)
         self._check_file_exists(path)
