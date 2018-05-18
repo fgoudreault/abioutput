@@ -3,7 +3,7 @@ import pip
 
 
 install_requires = [  # "abipy",
-                    "pint"]
+                    "pint", "colorama", "tabulate"]
 # need dev version
 abipy_git = ("git+git://github.com/abinit/abipy@develop#egg=abipy")
 
