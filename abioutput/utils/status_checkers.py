@@ -6,7 +6,7 @@ import colorama
 import os
 
 
-class BaseStatusChecker(BaseUtility):
+class BaseBuilder(BaseUtility):
     """Base class for all status checkers.
     """
     def __init__(self, directory, **kwargs):
@@ -21,7 +21,7 @@ class BaseStatusChecker(BaseUtility):
         pass
 
 
-class TreeStatusChecker(BaseStatusChecker):
+class TreeBuilder(BaseBuilder):
     """Object that starts at the top of a directory tree and scrolls down
     in all its subdirectories in order to get the status of each abinit
     calculations. The status is checked by looking at the log file for the
@@ -31,10 +31,10 @@ class TreeStatusChecker(BaseStatusChecker):
     does not have subdirectories containing other calculations
     (this may be a future feature to look down everywhere).
     """
-    _loggername = "TreeStatusChecker"
+    _loggername = "TreeBuilder"
 
     def __init__(self, top_directory, **kwargs):
-        """TreeStatusChecker init method.
+        """TreeBuilder init method.
 
         Parameters
         ----------
@@ -44,31 +44,34 @@ class TreeStatusChecker(BaseStatusChecker):
         super().__init__(top_directory, **kwargs)
         self._logger.info(f"Computing calculation tree status from"
                           f" {self._top_directory}")
-        self.status = self._get_status(self._top_directory)
+        self.tree = self._get_tree(self._top_directory)
 
     def _set_main_directory(self, directory_name):
         self._top_directory = directory_name
 
-    def _get_status(self, top_directory):
+    def _get_tree(self, top_directory):
         # check if current dir is a calculation directory
-        if StatusChecker.is_calculation_dir(top_directory):
+        if CalculationDir.is_calculation_dir(top_directory):
             self._logger.debug(f"Found a calculation directory:"
                                f" {top_directory}")
-            return [self._calculation_status(top_directory)]
+            return [CalculationDir(top_directory)]
         # if not, look in all subdirectories
         subentries = os.listdir(top_directory)
         subdirs = [os.path.join(top_directory, x)
                    for x in subentries if os.path.isdir(x)]
         status = []
         for subdir in subdirs:
-            status += self._get_status(os.path.join(top_directory,
-                                                    subdir))
+            status += self._get_tree(os.path.join(top_directory,
+                                                  subdir))
         return status
 
-    def _calculation_status(self, directory):
-        status_checker = StatusChecker(directory,
-                                       loglevel=self._logger.level)
-        return status_checker.status
+    @property
+    def status(self):
+        status = []
+        self._logger.info("Computing status of calculation tree.")
+        for calc in self.tree:
+            status.append(calc.status)
+        return status
 
     def print_status(self, shortpath=True):
         """Prints the status of each calculation in the calculation tree.
@@ -114,7 +117,49 @@ class TreeStatusChecker(BaseStatusChecker):
         return style + color + text + colorama.Style.RESET_ALL
 
 
-class StatusChecker(BaseStatusChecker):
+class CalculationDir(BaseBuilder):
+    """Class that represents a calculation directory.
+    """
+    _loggername = "CalculationDir"
+    
+    def __init__(self, directory, **kwargs):
+        """CalculationDir init method.
+
+        Parameters
+        ----------
+        directory : str
+                    The calculation directory.
+        """
+        super().__init__(directory, **kwargs)
+        if not self.is_calculation_dir(directory):
+            raise FileNotFoundError(f"No input file found in {directory}.")
+
+    def _set_main_directory(self, directory_name):
+        self.path = directory_name
+
+    @property
+    def status(self):
+        checker = StatusChecker(self)
+        return checker.status
+
+    @staticmethod
+    def is_calculation_dir(directory):
+        # check if this directory is a calculation directory
+        # to see if it is one, check if an input file (.in) is present
+        # in the directory. If yes, than it is considered a calculation dir
+        if not os.path.isdir(directory):
+            raise NotADirectoryError(f"{directory} is not a directory.")
+        entries = os.listdir(directory)
+        files = [x for x in entries if
+                 os.path.isfile(os.path.join(directory, x))]
+        for f in files:
+            if f.endswith(".in"):
+                # found an input file
+                return True
+        return False
+
+
+class StatusChecker(BaseUtility):
     """Class that checks the status of a calculation directory.
     """
     _loggername = "StatusChecker"
@@ -124,19 +169,16 @@ class StatusChecker(BaseStatusChecker):
 
         Parameters
         ----------
-        directory : str
+        directory : CalculationDir instance
                     The calculation directory.
         """
-        super().__init__(directory, **kwargs)
-        self.status = self._get_status(self._directory)
-
-    def _set_main_directory(self, directory_name):
-        self._directory = directory_name
+        super().__init__(**kwargs)
+        if not isinstance(directory, CalculationDir):
+            raise ValueError("directory must be a CalculationDir instance.")
+        self.status = self._get_status(directory.path)
 
     def _get_status(self, directory):
         # check first if this is really a calculation direcectory
-        if not self.is_calculation_dir(directory):
-            raise FileNotFoundError(f"No input file found in {directory}.")
         self._logger.debug(f"Looking for {directory}'s status.")
         status = {"path": directory,
                   "name": os.path.basename(directory)}
@@ -164,6 +206,7 @@ class StatusChecker(BaseStatusChecker):
             status["calculation_started"] = True
             status["calculation_finished"] = finished
             return status
+
         elif len(log) > 1:
             # wtf more than one log file??
             raise LookupError(f"More than 1 log file found in {directory}.")
@@ -178,22 +221,6 @@ class StatusChecker(BaseStatusChecker):
         # check in the file to get the computation status
         checker = FileStatusChecker(filepath, loglevel=self._logger.level)
         return checker.calculation_finished
-
-    @staticmethod
-    def is_calculation_dir(directory):
-        # check if this directory is a calculation directory
-        # to see if it is one, check if an input file (.in) is present
-        # in the directory. If yes, than it is considered a calculation dir
-        if not os.path.isdir(directory):
-            raise NotADirectoryError(f"{directory} is not a directory.")
-        entries = os.listdir(directory)
-        files = [x for x in entries if
-                 os.path.isfile(os.path.join(directory, x))]
-        for f in files:
-            if f.endswith(".in"):
-                # found an input file
-                return True
-        return False
 
     def _look_in_all_subdirs(self, top_directory, filename=None,
                              infilename=None,
