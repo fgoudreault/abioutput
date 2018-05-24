@@ -78,6 +78,8 @@ class EIGParser(BaseSubParser):
         # get eigenvalues
         nlines = len(loi)
         lines_for_10percent = nlines // 10
+        if lines_for_10percent == 0:
+            lines_for_10percent = 1
         skip = 0
 
         for i, line in enumerate(loi):
