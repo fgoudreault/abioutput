@@ -25,7 +25,7 @@ class OutputParser(AbinitOutputFile, BaseUtility):
         self._output_vars_dataset = None
 
     def extract_output_variable(self, variable):
-        # return an awway of all the values of the variable to get
+        # return an array of all the values of the variable to get
         # in globals?
         glob_names = self.output_vars_global.keys()
         if variable in glob_names:
