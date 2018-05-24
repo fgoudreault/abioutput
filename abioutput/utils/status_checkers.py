@@ -1,4 +1,5 @@
 from ..bases import BaseUtility
+from .routines import search_in_all_subdirs
 import os
 
 
@@ -7,25 +8,27 @@ class StatusChecker(BaseUtility):
     """
     _loggername = "StatusChecker"
 
-    def __init__(self, directory, **kwargs):
+    def __init__(self, directory, ignore=None, **kwargs):
         """Status checker init method.
 
         Parameters
         ----------
         directory : CalculationDir instance
                     The calculation directory.
+        ignore : list, optional
+                 Ignore these subdirectories when looking for files.
         """
         super().__init__(**kwargs)
-        self.status = self._get_status(directory)
+        self.status = self._get_status(directory, ignore=ignore)
 
-    def _get_status(self, directory):
+    def _get_status(self, directory, **kwargs):
         # check first if this is really a calculation direcectory
         self._logger.debug(f"Looking for {directory}'s status.")
         status = {"path": directory,
                   "name": os.path.basename(directory)}
         # look for log and output files
-        log = self._look_in_all_subdirs(directory, fileending="log")
-        out = self._look_in_all_subdirs(directory, infilename=".out")
+        log = search_in_all_subdirs(directory, fileending="log", **kwargs)
+        out = search_in_all_subdirs(directory, infilename=".out", **kwargs)
         if len(log) == 0 and len(out) == 0:
             # no log and output file found.
             # this means that computation has not started or that files were
@@ -63,48 +66,6 @@ class StatusChecker(BaseUtility):
         checker = FileStatusChecker(filepath, loglevel=self._logger.level)
         return checker.calculation_finished
 
-    def _look_in_all_subdirs(self, top_directory, filename=None,
-                             infilename=None,
-                             filestarting="", fileending="",
-                             expected=None):
-        # find all files in the directory and in its subdirectories that
-        # matches the pattern.
-        # start by listing the path of all files
-        files = self._get_all_subfiles(top_directory)
-        to_return = []
-        for f in files:
-            name = os.path.basename(f)
-            if filename is not None:
-                if name == filename:
-                    to_return.append(f)
-                # don't consider other criterion
-                continue
-            if infilename is not None:
-                if infilename in name:
-                    to_return.append(f)
-                # don't consider other criterion
-                continue
-            if name.startswith(filestarting) and name.endswith(fileending):
-                to_return.append(f)
-        if expected is not None:
-            # check if number of files found matches what was expected
-            if expected != len(to_return):
-                raise ValueError("Found more or less files as expected.")
-        return to_return
-
-    def _get_all_subfiles(self, top_directory):
-        # return a list of the path of all files and subfiles in this dir.
-        entries = os.listdir(top_directory)
-        files_here = [os.path.join(top_directory, x)
-                      for x in entries
-                      if os.path.isfile(os.path.join(top_directory, x))]
-        files = files_here
-        for subdir in [os.path.join(top_directory, x)
-                       for x in entries
-                       if os.path.isdir(os.path.join(top_directory, x))]:
-            files += self._get_all_subfiles(subdir)
-        return files
-
 
 class FileStatusChecker(BaseUtility):
     """Class that checks the status of a computation from the log or out file.
@@ -123,6 +84,13 @@ class FileStatusChecker(BaseUtility):
         if not os.path.isfile(filepath) or not os.path.exists(filepath):
             raise FileNotFoundError(f"{filepath} not a valid file path.")
         self.calculation_finished = self._get_status_from_file(filepath)
+        self.convergence_reached = False
+        if self.calculation_finished:
+            self.convergence_reached = self._get_convergence_from_file(filepath)
+
+    def _get_convergence_from_file(self, filepath):
+        self._logger.debug(f"Looking for convergence status in {filepath}.")
+
 
     def _get_status_from_file(self, filepath):
         self._logger.debug(f"Looking for calculation status in {filepath}.")
