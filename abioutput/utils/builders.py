@@ -1,9 +1,9 @@
 from ..bases import BaseUtility
 from .bases import BaseBuilder
 from .calculation_dir import CalculationDir
+from .routines import styled_text
 from tabulate import tabulate
 from colorama import Fore, Style
-import colorama
 import numpy as np
 import os
 import time
@@ -289,8 +289,8 @@ class TreeBuilder(BaseBuilder):
                 status = self.status[i]
                 # if computation not finished; attribute is not available
                 if not status["calculation_finished"]:
-                    values.append(self._get_print_text("NOT AVAILABLE",
-                                                       style=Style.BRIGHT))
+                    values.append(styled_text("NOT AVAILABLE",
+                                              style=Style.BRIGHT))
                     continue
                 # use element 0 here cause values are tuples (val, units)
                 values.append(calc.get_output_var(arg)[0])
@@ -338,8 +338,8 @@ class TreeBuilder(BaseBuilder):
                     last_can_work += 1
                 else:
                     # cannot work with this value
-                    deltas.append(self._get_print_text("NOT AVAILABLE",
-                                                       style=Style.BRIGHT))
+                    deltas.append(styled_text("NOT AVAILABLE",
+                                              style=Style.BRIGHT))
             self._logger.debug(f"deltas to add {d}: {deltas}.")
             table.add_column("delta_" + d + " (%)", deltas, index=index + 1)
 
@@ -373,17 +373,17 @@ class TreeBuilder(BaseBuilder):
             started = calculation["calculation_started"]
             finished = calculation["calculation_finished"]
             if not started:
-                status = self._get_print_text("NOT STARTED",
-                                              color=Fore.RED,
-                                              style=Style.BRIGHT)
+                status = styled_text("NOT STARTED",
+                                     color=Fore.RED,
+                                     style=Style.BRIGHT)
             elif started and not finished:
-                status = self._get_print_text("NOT FINISHED",
-                                              color=Fore.YELLOW,
-                                              style=Style.BRIGHT)
+                status = styled_text("NOT FINISHED",
+                                     color=Fore.YELLOW,
+                                     style=Style.BRIGHT)
             elif started and finished:
-                status = self._get_print_text("COMPLETED",
-                                              color=Fore.GREEN,
-                                              style=Style.BRIGHT)
+                status = styled_text("COMPLETED",
+                                     color=Fore.GREEN,
+                                     style=Style.BRIGHT)
             statuses.append(status)
         return statuses
 
@@ -395,22 +395,18 @@ class TreeBuilder(BaseBuilder):
             finished = calculation["calculation_finished"]
             conv = output.is_calculation_converged
             if not started and not finished:
-                status = self._get_print_text("NOT AVAILABLE",
-                                              style=Style.BRIGHT)
+                status = styled_text("NOT AVAILABLE",
+                                     style=Style.BRIGHT)
             if started and not finished:
-                status = self._get_print_text("NOT AVAILABLE",
-                                              style=Style.BRIGHT)
+                status = styled_text("NOT AVAILABLE",
+                                     style=Style.BRIGHT)
             elif conv is False and finished:
-                status = self._get_print_text("NOT REACHED",
-                                              color=Fore.RED,
-                                              style=Style.BRIGHT)
+                status = styled_text("NOT REACHED",
+                                     color=Fore.RED,
+                                     style=Style.BRIGHT)
             elif conv is True and finished:
-                status = self._get_print_text("REACHED",
-                                              color=Fore.GREEN,
-                                              style=Style.BRIGHT)
+                status = styled_text("REACHED",
+                                     color=Fore.GREEN,
+                                     style=Style.BRIGHT)
             statuses.append(status)
         return statuses
-
-    def _get_print_text(self, text, color="", style=""):
-        # returns colored and styled string
-        return style + color + text + colorama.Style.RESET_ALL
