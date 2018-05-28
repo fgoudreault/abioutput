@@ -235,6 +235,7 @@ class TreeBuilder(BaseBuilder):
         return self._status
 
     def print_attributes(self, *args, shortpath=True, delta=None, sortby=None,
+                         delta_type="percent",
                          precision=2):
         """Print a table of the arguments from each calculation in the tree.
         Can print computation status as well as output variables.
@@ -254,6 +255,11 @@ class TreeBuilder(BaseBuilder):
                 A column will be added
                 to show the variations of the parameter. It should be
                 an abinit output variable (like 'etotal').
+        delta_type : str, optional {'percent', 'absolute', 'absolute_per_atom'}
+                     Gives the 'units' of the deltas;
+                     - percent: delta is given in percentage of difference
+                     - absolute: delta is just the difference between the values.
+                     - absolute_per_atom: same as absolute but divided by the number of atoms.
         sortby : str, optional
                  Sorts the calculations by the name of this variable.
                  E.g.: if you give 'ecut' in args and in sortby, calculations
@@ -284,18 +290,7 @@ class TreeBuilder(BaseBuilder):
             table.add_column("convergence", self._get_convergence())
         # print each attribute column
         for arg in args:
-            values = []
-            for i, calc in enumerate(self.tree):
-                status = self.status[i]
-                # if computation not finished; attribute is not available
-                if not status["calculation_finished"]:
-                    values.append(styled_text("NOT AVAILABLE",
-                                              style=Style.BRIGHT))
-                    continue
-                # use element 0 here cause values are tuples (val, units)
-                values.append(calc.get_output_var(arg)[0])
-            table.add_column(arg, values)
-            self._logger.debug(f"Values for {arg} found are: {values}.")
+            table.add_column(arg, self._get_attribute(arg))
 
         # sort table if needed
         if sortby is not None:
@@ -303,45 +298,65 @@ class TreeBuilder(BaseBuilder):
         # finish the first loop to make sure the sorted value is retrieved
         # and table has been sorted already.
         if delta is not None:
-            self._add_delta_columns(delta, table, precision)
+            for d in delta:
+                if not table.is_column_sortable(d):
+                    # column cannot be sorted, do not compute deltas
+                    raise ValueError(f"{d} is not sortable => cannot compute"
+                                     f" delta.")
+                data = table.get_column(d)
+                index = table.get_column_index(d) + 1
+                natoms = None
+                if delta_type == "absolute_per_atom":
+                    natoms = [c.get_output_var("natom")[0] for c in self.tree]
+                name, values = self._get_delta_attribute(d, data, precision, delta_type, natoms=natoms)
+                table.add_column(name, values, index=index)
         table.print()
 
-    def _add_delta_columns(self, delta, table, precision):
-        # in the table, add columns of delta values for each value in delta
-        # sorted according to the sortby column. Print result with 'precision'
+    def _get_delta_attribute(self, delta, data, precision, delta_type,
+                             natoms=None):
+        # compute delta column from data. Print result with 'precision'
         # decimals
         # WE ASSUME HERE THE TABLE HAS ALREADY BEEN SORTED
-        for d in delta:
-            if not table.is_column_sortable(d):
-                # column cannot be sorted, do not compute deltas
-                continue
-            deltas = []  # delta column values
-            # if column is sortable => at least one value is an int or a float
-            data = table.get_column(d)
-            index = table.get_column_index(d)
-            # indices of values which we can extract a delta
-            can_work_with_indices = [i for i, x in enumerate(data)
-                                     if type(x) in (int, float)]
-            last_can_work = 0
-            for i, x in enumerate(data):
-                if i in can_work_with_indices:
-                    # can compute a delta
-                    if last_can_work == 0:
-                        # first value => no delta to compute
-                        deltas.append("--")
-                        last_can_work += 1
-                        continue
-                    lastval = data[can_work_with_indices[last_can_work - 1]]
-                    delta_val = round((x - lastval) / abs(lastval) * 100,
-                                      precision)
-                    deltas.append(delta_val)
+        # check that name is ok
+        name = "delta_" + delta
+        if delta_type == "percent":
+            name += " (%)"
+        elif delta_type == "absolute":
+            name += " (abs)"
+        elif delta_type == "absolute_per_atom":
+            name += " (abs/atom)"
+        else:
+            ValueError(f"Invalid delta type: {delta_type}.")
+        deltas = []  # delta column values
+        # if column is sortable => at least one value is an int or a float
+        # indices of values which we can extract a delta
+        can_work_with_indices = [i for i, x in enumerate(data)
+                                 if type(x) in (int, float)]
+        last_can_work = 0
+        for i, x in enumerate(data):
+            if i in can_work_with_indices:
+                # can compute a delta
+                if last_can_work == 0:
+                    # first value => no delta to compute
+                    deltas.append("--")
                     last_can_work += 1
-                else:
-                    # cannot work with this value
-                    deltas.append(styled_text("NOT AVAILABLE",
-                                              style=Style.BRIGHT))
-            self._logger.debug(f"deltas to add {d}: {deltas}.")
-            table.add_column("delta_" + d + " (%)", deltas, index=index + 1)
+                    continue
+                lastval = data[can_work_with_indices[last_can_work - 1]]
+                if delta_type == "percent":
+                    delta_val = (x - lastval) / abs(lastval) * 100
+                elif delta_type == "absolute" or delta_type == "absolute_per_atom":
+                    delta_val = x - lastval
+                    if delta_type == "absolute_per_atom":
+                        delta_val /= natoms[i]
+                delta_val = round(delta_val, precision)
+                deltas.append(delta_val)
+                last_can_work += 1
+            else:
+                # cannot work with this value
+                deltas.append(styled_text("NOT AVAILABLE",
+                                          style=Style.BRIGHT))
+        self._logger.debug(f"deltas to add {delta}: {deltas}.")
+        return name, deltas
 
     def print_status(self, shortpath=True):
         """Prints the status of each calculation in the calculation tree.
@@ -356,7 +371,21 @@ class TreeBuilder(BaseBuilder):
         """
         self.print_attributes("status", "convergence_reached",
                               shortpath=shortpath)
-
+    
+    def _get_attribute(self, attribute):
+        values = []
+        for i, calc in enumerate(self.tree):
+            status = self.status[i]
+            # if computation not finished; attribute is not available
+            if not status["calculation_finished"]:
+                values.append(styled_text("NOT AVAILABLE",
+                                          style=Style.BRIGHT))
+                continue
+            # use element 0 here cause values are tuples (val, units)
+            values.append(calc.get_output_var(attribute)[0])
+        self._logger.debug(f"Values for {attribute} found are: {values}.")
+        return values
+    
     def _get_calculations(self, shortpath=True):
         paths = []
         for calc in self.tree:
