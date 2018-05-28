@@ -1,6 +1,6 @@
 from .bases import BaseBuilder
 from .routines import search_in_all_subdirs
-from .status_checkers import StatusChecker
+from .checkers import StatusChecker
 from abioutput.parsers import FilesFileParser, OutputParser
 import os
 
