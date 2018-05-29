@@ -86,11 +86,11 @@ class FileStatusChecker(BaseUtility):
         self.calculation_finished = self._get_status_from_file(filepath)
         self.convergence_reached = False
         if self.calculation_finished:
-            self.convergence_reached = self._get_convergence_from_file(filepath)
+            conv_reached = self._get_convergence_from_file(filepath)
+            self.convergence_reached = conv_reached
 
     def _get_convergence_from_file(self, filepath):
         self._logger.debug(f"Looking for convergence status in {filepath}.")
-
 
     def _get_status_from_file(self, filepath):
         self._logger.debug(f"Looking for calculation status in {filepath}.")

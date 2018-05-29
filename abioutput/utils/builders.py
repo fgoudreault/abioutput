@@ -258,8 +258,10 @@ class TreeBuilder(BaseBuilder):
         delta_type : str, optional {'percent', 'absolute', 'absolute_per_atom'}
                      Gives the 'units' of the deltas;
                      - percent: delta is given in percentage of difference
-                     - absolute: delta is just the difference between the values.
-                     - absolute_per_atom: same as absolute but divided by the number of atoms.
+                     - absolute: delta is just the difference
+                                 between the values.
+                     - absolute_per_atom: same as absolute but divided by
+                                          the number of atoms.
         sortby : str, optional
                  Sorts the calculations by the name of this variable.
                  E.g.: if you give 'ecut' in args and in sortby, calculations
@@ -301,14 +303,17 @@ class TreeBuilder(BaseBuilder):
             for d in delta:
                 if not table.is_column_sortable(d):
                     # column cannot be sorted, do not compute deltas
-                    raise ValueError(f"{d} is not sortable => cannot compute"
-                                     f" delta.")
+                    self._logger.error(f"{d} is not sortable => cannot compute"
+                                       f" its delta.")
+                    continue
                 data = table.get_column(d)
                 index = table.get_column_index(d) + 1
                 natoms = None
                 if delta_type == "absolute_per_atom":
                     natoms = [c.get_output_var("natom")[0] for c in self.tree]
-                name, values = self._get_delta_attribute(d, data, precision, delta_type, natoms=natoms)
+                name, values = self._get_delta_attribute(d, data, precision,
+                                                         delta_type,
+                                                         natoms=natoms)
                 table.add_column(name, values, index=index)
         table.print()
 
@@ -344,7 +349,8 @@ class TreeBuilder(BaseBuilder):
                 lastval = data[can_work_with_indices[last_can_work - 1]]
                 if delta_type == "percent":
                     delta_val = (x - lastval) / abs(lastval) * 100
-                elif delta_type == "absolute" or delta_type == "absolute_per_atom":
+                elif (delta_type == "absolute" or
+                      delta_type == "absolute_per_atom"):
                     delta_val = x - lastval
                     if delta_type == "absolute_per_atom":
                         delta_val /= natoms[i]
@@ -371,7 +377,7 @@ class TreeBuilder(BaseBuilder):
         """
         self.print_attributes("status", "convergence_reached",
                               shortpath=shortpath)
-    
+
     def _get_attribute(self, attribute):
         values = []
         for i, calc in enumerate(self.tree):
@@ -385,7 +391,7 @@ class TreeBuilder(BaseBuilder):
             values.append(calc.get_output_var(attribute)[0])
         self._logger.debug(f"Values for {attribute} found are: {values}.")
         return values
-    
+
     def _get_calculations(self, shortpath=True):
         paths = []
         for calc in self.tree:

@@ -5,7 +5,6 @@ from abioutput.parsers import FilesFileParser, OutputParser
 import os
 
 
-
 class CalculationDir(BaseBuilder):
     """Class that represents a calculation directory.
     """
@@ -40,14 +39,15 @@ class CalculationDir(BaseBuilder):
                               " cannot analyse output file.")
         self._outputfile = OutputParser(self.filesfile["output_path"])
         return self._outputfile
-    
+
     @property
     def is_calculation_converged(self):
         # check if computation is finished
         try:
-            out = self.outputfile
+            self.outputfile
         except LookupError:
-            self._logger.error("Cannot read convergence if computation is not finished.")
+            self._logger.error("Cannot read convergence if computation"
+                               " is not finished.")
             return False
         iscf = self.get_output_var("iscf")[0]
         if iscf < 0:
@@ -61,12 +61,15 @@ class CalculationDir(BaseBuilder):
         if ionmov > 0:
             # ionmov calculation => check for Force convergence
             return self._dig_output_for_convergence("gradients are converged",
-                                                    "not enough Broyd/MD steps to converge gradients")
+                                                    "not enough Broyd/MD steps"
+                                                    " to converge gradients")
         # standard GS calculation
         return self._dig_output_for_convergence("converged",
-                                                "not enough SCF cycles to converge")
+                                                "not enough SCF "
+                                                "cycles to converge")
 
-    def _dig_output_for_convergence(self, converged_keywords, nonconverged_keywords):
+    def _dig_output_for_convergence(self, converged_keywords,
+                                    nonconverged_keywords):
         with open(self.filesfile["output_path"]) as f:
             lines = f.readlines()
         for line in lines[::-1]:
@@ -76,7 +79,7 @@ class CalculationDir(BaseBuilder):
                 return False
         # if we are here, computation is not finished => return False
         self._logger.warning("Could not find the convergence status...")
-        return False        
+        return False
 
     def get_output_var(self, outputvar):
         """Returns the value of an output variable from this calculation.
@@ -92,7 +95,7 @@ class CalculationDir(BaseBuilder):
     def _get_files_file(self, **kwargs):
         return search_in_all_subdirs(self.path, fileending=".files",
                                      expected=1, **kwargs)[0]
-    
+
     def _get_input_file(self, **kwargs):
         return search_in_all_subdirs(self.path, fileending=".in",
                                      expected=1, **kwargs)[0]
