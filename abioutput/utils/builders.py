@@ -310,7 +310,14 @@ class TreeBuilder(BaseBuilder):
                 index = table.get_column_index(d) + 1
                 natoms = None
                 if delta_type == "absolute_per_atom":
-                    natoms = [c.get_output_var("natom")[0] for c in self.tree]
+                    natoms = []
+                    for c in self.tree:
+                        try:
+                            natom = c.get_output_var("natom")[0]
+                        except LookupError:
+                            # calculation not finished => return none
+                            natom = None
+                        natoms.append(natom)
                 name, values = self._get_delta_attribute(d, data, precision,
                                                          delta_type,
                                                          natoms=natoms)
@@ -336,7 +343,8 @@ class TreeBuilder(BaseBuilder):
         # if column is sortable => at least one value is an int or a float
         # indices of values which we can extract a delta
         can_work_with_indices = [i for i, x in enumerate(data)
-                                 if type(x) in (int, float)]
+                                 if type(x) in (int, float)
+                                 and natoms[i] is not None]
         last_can_work = 0
         for i, x in enumerate(data):
             if i in can_work_with_indices:
