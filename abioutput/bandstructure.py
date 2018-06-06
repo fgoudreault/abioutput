@@ -45,6 +45,7 @@ class Bandstructure:
     def plot(self, bands=None, symmetry="none",
              line_at_zero=True,
              save_at=None, show=True,
+             high_sym_vlines=True,
              other_k_labels=None, **kwargs):
         """Plot the bandstructure.
 
@@ -59,6 +60,9 @@ class Bandstructure:
         bands: list, optional
                Selects the range of bands to plot (starting from 0).
                If set to None, all bands are shown.
+        high_sym_vlines : bool, optional
+                          If True, plain vertical lines will be shown
+                          at the high symetry points.
         save_at: str, optional
                  If not None, gives the path to where the figure will be saved.
         show: bool, optional
@@ -78,8 +82,15 @@ class Bandstructure:
         xs = list(range(len(self.kpts)))
         labels, labels_loc = self._get_sym_pts_labels(symmetry)
         xtickslabels = [(pos, label) for pos, label in zip(labels_loc, labels)]
+        vertical_lines = kwargs.pop("vertical_lines", [])
+        vertical_linestyles = kwargs.pop("vertical_linestyle", [])
+        if high_sym_vlines:
+            vertical_lines += labels_loc
+            vertical_linestyles += ["-"] * len(labels_loc)
         plot = Plot(xs, ys, xticks_labels=xtickslabels,
                     horizontal_lines=horizontal_lines,
+                    vertical_lines=vertical_lines,
+                    vertical_linestyles=vertical_linestyles,
                     **kwargs)
         if show:
             plot.plot()

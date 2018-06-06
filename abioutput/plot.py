@@ -8,6 +8,8 @@ class Plot:
     def __init__(self, xdata, ydata, xlabel="", ylabel="", title="",
                  horizontal_lines=None, vertical_lines=None, color="k",
                  linestyle="-",
+                 horizontal_linestyles="--",
+                 vertical_linestyles="--",
                  xticks_labels=None, curve_labels=None):
         """Init method.
 
@@ -28,6 +30,12 @@ class Plot:
         linestyle : str, optional
                     A list of linestyle for each curve. If only one str is
                     used, the same linestyle will be applied to each curve.
+        horizontal_linestyles : list, str, optional
+                                A list of linestyles for the horizontal
+                                linestyles.
+        vertical_linestyles : list, str, optional
+                              Same as horizontal_linestyle but for vertical
+                              lines.
         color : str, list, optional
                 If only a string, all curves (if many) will be set to this
                 color. If a list, must be commensurate with the number of
@@ -64,6 +72,15 @@ class Plot:
             self.horizontal_lines = []
         if self.vertical_lines is None:
             self.vertical_lines = []
+        self.horizontal_linestyles = horizontal_linestyles
+        self.vertical_linestyles = vertical_linestyles
+        if isinstance(horizontal_linestyles, str):
+            self.horizontal_linestyles = ([horizontal_linestyles] *
+                                          len(self.horizontal_lines))
+        if isinstance(vertical_linestyles, str):
+            self.vertical_linestyles = ([vertical_linestyles] *
+                                        len(self.vertical_lines))
+
         self.colors = self._set_curve_attribute(color, n_curves)
         self.linestyles = self._set_curve_attribute(linestyle, n_curves)
         self.xticks_labels = xticks_labels
@@ -124,6 +141,10 @@ class Plot:
         allcolors = np.concatenate([self.colors, plot.colors])
         allcurvelabels = np.concatenate([self.curve_labels, plot.curve_labels])
         alllinestyles = np.concatenate([self.linestyles, plot.linestyles])
+        all_hor_styles = np.concatenate([self.horizontal_linestyles,
+                                         plot.horizontal_linestyles])
+        all_ver_styles = np.concatenate([self.vertical_linestyles,
+                                         plot.vertical_linestyles])
         # xticks labels, only keep those that are different
         all_xticks = list(self.xticks_labels)
         for xtick in plot.xticks_labels:
@@ -144,6 +165,8 @@ class Plot:
                     title=title,
                     horizontal_lines=all_hor_lines,
                     vertical_lines=all_ver_lines,
+                    horizontal_linestyles=all_hor_styles,
+                    vertical_linestyles=all_ver_styles,
                     linestyle=alllinestyles,
                     color=allcolors,
                     xticks_labels=all_xticks,
@@ -165,10 +188,6 @@ class Plot:
         legend_outside : bool, optional
                          If True, the legend (if displayed) will be drawn
                          outside graph.
-        vertical_linestyle : str, optional
-                             Gives the linestyle for vertical lines.
-        horizontal_linestyle : str, optional
-                               Gives the linestyle for horizontal lines.
         vertical_color : str, optional
                          Gives the vertical line color.
         horizontal_color : str, optional
@@ -183,19 +202,23 @@ class Plot:
                                                          self.curve_labels):
             ax.plot(xdata, curve, color=color, linestyle=linestyle,
                     label=label)
-        for hline in self.horizontal_lines:
+        for hline, linestyle in zip(self.horizontal_lines,
+                                    self.horizontal_linestyles):
             ax.axhline(hline, color=horizontal_color,
-                       linestyle=horizontal_linestyle)
-        for vline in self.vertical_lines:
+                       linestyle=linestyle)
+        for vline, linestyle in zip(self.vertical_lines,
+                                    self.vertical_linestyles):
             ax.axvline(vline, color=vertical_color,
-                       linestyle=vertical_linestyle)
+                       linestyle=linestyle)
         if self.xticks_labels is not None:
             ticks_loc = [x[0] for x in self.xticks_labels]
             ticks_labels = [x[1] for x in self.xticks_labels]
             ax.set_xticks(ticks_loc)
             ax.set_xticklabels(ticks_labels)
-        # set title
+        # set title and axis labels
         ax.set_title(self.title)
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
         # show legend if needed and if at least one curve_labels is not None
         if show_legend and not all([True if x is None else False
                                     for x in self.curve_labels]):
