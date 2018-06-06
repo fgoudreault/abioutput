@@ -38,7 +38,7 @@ class Bandstructure:
         self.fermi_band = fermi_band
         self.fermi_energy = fermi_energy
         if self.fermi_band is not None:
-            if self.fermi_energy is None:
+            if self.fermi_energy is not None:
                 raise ValueError("fermi_energy is already defined.")
             self.fermi_energy = max(self.bands[self.fermi_band])
 
