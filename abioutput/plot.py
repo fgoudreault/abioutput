@@ -1,128 +1,101 @@
-import numpy as np
+import abc
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class Plot:
     """Class to plot something.
     """
-    def __init__(self, xdata, ydata, xlabel="", ylabel="", title="",
-                 horizontal_lines=None, vertical_lines=None, color="k",
-                 linestyle="-",
-                 horizontal_linestyles="--",
-                 vertical_linestyles="--",
-                 xticks_labels=None, curve_labels=None):
+    def __init__(self):
         """Init method.
+        """
+        # init the attributes of the figure and the curves
+        self._fig = None
+        self._curves = []
+        self._xtick_labels = None
+        self._vlines = []
+        self._hlines = []
+
+        self._xlabel = ""
+        self._ylabel = ""
+        self._title = ""
+
+    @property
+    def xlabel(self):
+        return self._xlabel
+
+    @xlabel.setter
+    def xlabel(self, label):
+        if not isinstance(label, str):
+            raise TypeError("Label must be str.")
+        self._xlabel = label
+
+    @property
+    def ylabel(self):
+        return self._ylabel
+
+    @ylabel.setter
+    def ylabel(self, label):
+        if not isinstance(label, str):
+            raise TypeError("Label must be str.")
+        self._ylabel = label
+
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, title):
+        if not isinstance(title, str):
+            raise TypeError("Title must be str.")
+        self._title = title
+
+    @property
+    def xtick_labels(self):
+        return self._xtick_labels
+
+    @xtick_labels.setter
+    def xtick_labels(self, labels):
+        # must be a list of two component lists.
+        if type(labels) not in (list, tuple):
+            raise TypeError("Labels should be a list.")
+        if type(labels[0]) not in (list, tuple) or len(labels[0]) != 2:
+            raise TypeError("Each xtick_labels componant is a list of"
+                            " (pos, label).")
+        self._xtick_labels = labels
+
+    def add_curve(self, *args, **kwargs):
+        """Add a curve to the plot.
+
+        All parameters are passed to the Curve class.
+        """
+        self._curves.append(Curve(*args, **kwargs))
+
+    def add_vline(self, *args, **kwargs):
+        """Add a vertical line.
+
+        All parameters are passed to the VLine class.
+        """
+        self._vlines.append(VLine(*args, **kwargs))
+
+    def add_hline(self, *args, **kwargs):
+        """Add a horizontal line.
+
+        All parameters are passed to the HLine class.
+        """
+        self._hlines.append(HLine(*args, **kwargs))
+
+    def set_curve_label(self, label, curve_index):
+        """Set the label of a specific curve.
 
         Parameters
         ----------
-        xdata : list
-                The data for the x axis, must be commensurate with ydata.
-                Can be a list of xdata for each ydata.
-        ydata : list
-                The data for the y axis, must be commensurate with xdata.
-                Can be 2 dimensional for which each item will be an
-                individual curve.
-        xlabel,ylabel,title : str, optional
-        horizontal_lines : list, optional
-                           List of y coordinates to draw a horizontal line.
-        vertical_lines : list, optional
-                         Same as horizontal_lines but for vertical lines.
-        linestyle : str, optional
-                    A list of linestyle for each curve. If only one str is
-                    used, the same linestyle will be applied to each curve.
-        horizontal_linestyles : list, str, optional
-                                A list of linestyles for the horizontal
-                                linestyles.
-        vertical_linestyles : list, str, optional
-                              Same as horizontal_linestyle but for vertical
-                              lines.
-        color : str, list, optional
-                If only a string, all curves (if many) will be set to this
-                color. If a list, must be commensurate with the number of
-                curves to draw.
-        xticks_labels : list, optional
-                        A list of tuple of the form (tick location, tick lavel)
-                        If None, no modification on the ticks is done from
-                        default matplotlib behavior.
-        curve_labels : list, optional
-                       The list of curve labels. If a curve label is None,
-                       it is not shown.
+        label : str
+                The label to apply to the curve.
+        curve_index : int
+                      The curve index.
         """
-        # set the attributes of the figure and the curves
-        self._fig = None
-        self.xdata = self._set_data(xdata)
-        self.ydata = self._set_data(ydata)
-        n_curves = len(self.ydata)
-        # if only one xdata, use the same for all ydata curves
-        if len(self.xdata) == 1 and n_curves > 1:
-            self.xdata = [self.xdata[0]] * n_curves
-        # check that number of xdata matches number of ydata
-        if len(self.xdata) != n_curves:
-            raise ValueError("Number of x data not equivalent to number of y.")
-        # check that all curves are ready to be drawn
-        for xdata, ydata in zip(self.xdata, self.ydata):
-            assert len(xdata) == len(ydata)
-
-        self.xlabel = xlabel
-        self.ylabel = ylabel
-        self.title = title
-        self.horizontal_lines = horizontal_lines
-        self.vertical_lines = vertical_lines
-        if self.horizontal_lines is None:
-            self.horizontal_lines = []
-        if self.vertical_lines is None:
-            self.vertical_lines = []
-        self.horizontal_linestyles = horizontal_linestyles
-        self.vertical_linestyles = vertical_linestyles
-        if isinstance(horizontal_linestyles, str):
-            self.horizontal_linestyles = ([horizontal_linestyles] *
-                                          len(self.horizontal_lines))
-        if isinstance(vertical_linestyles, str):
-            self.vertical_linestyles = ([vertical_linestyles] *
-                                        len(self.vertical_lines))
-
-        self.colors = self._set_curve_attribute(color, n_curves)
-        self.linestyles = self._set_curve_attribute(linestyle, n_curves)
-        self.xticks_labels = xticks_labels
-        self.curve_labels = self._set_curve_labels(curve_labels, n_curves)
-        self._fig = None
-
-    def _set_data(self, data):
-        # if only one dimension to data, make a list with only one curve
-        if len(np.shape(data)) == 1:
-            return [data, ]
-        # if more than 2 dimensions, raise error
-        if len(np.shape(data)) > 2:
-            raise TypeError("data is greater than 2D!")
-        # else return data
-        return data
-
-    def _set_curve_attribute(self, attribute, n_curves):
-        # if attribute is only one str, apply same string to all curves
-        if isinstance(attribute, str):
-            return [attribute] * n_curves
-        # if not a str, its a list and it must be the same length as n_curves
-        if len(attribute) != n_curves:
-            raise ValueError("Number of curve attribute does not match the"
-                             " number of curves.")
-        # else, return the attribute
-        return attribute
-
-    def _set_curve_labels(self, curve_labels, n_curves):
-        # curve labels must be matched manually (e.g. for bandstructure we
-        # do not want one curve label for each band)
-        # if only one string, only the first curve has this label
-        if isinstance(curve_labels, str):
-            return [curve_labels] + [None] * (n_curves - 1)
-        # if None, return a list of Nones
-        if curve_labels is None:
-            return [None] * n_curves
-        # if a list but is not the same length as n_curves
-        if len(curve_labels) != n_curves:
-            raise ValueError("Number of labels does not match"
-                             " number of curves.")
-        # else, return the list of curve_labels
-        return curve_labels
+        self._curves[curve_index].label = label
 
     def __add__(self, plot):
         """Method that allows the addition of two plots.
@@ -132,24 +105,14 @@ class Plot:
         """
         if self.xlabel != plot.xlabel or self.ylabel != plot.ylabel:
             raise ValueError("Axis labels does not match :(")
-        all_xs = np.concatenate([self.xdata, plot.xdata])
-        all_ys = np.concatenate([self.ydata, plot.ydata])
-        all_hor_lines = np.concatenate([self.horizontal_lines,
-                                       plot.horizontal_lines])
-        all_ver_lines = np.concatenate([self.vertical_lines,
-                                       plot.vertical_lines])
-        allcolors = np.concatenate([self.colors, plot.colors])
-        allcurvelabels = np.concatenate([self.curve_labels, plot.curve_labels])
-        alllinestyles = np.concatenate([self.linestyles, plot.linestyles])
-        all_hor_styles = np.concatenate([self.horizontal_linestyles,
-                                         plot.horizontal_linestyles])
-        all_ver_styles = np.concatenate([self.vertical_linestyles,
-                                         plot.vertical_linestyles])
-        # xticks labels, only keep those that are different
-        all_xticks = list(self.xticks_labels)
-        for xtick in plot.xticks_labels:
+        newplot = Plot()
+        for attr in ("_curves", "_hlines", "_vlines"):
+            setattr(newplot, attr, getattr(self, attr) + getattr(plot, attr))
+        all_xticks = list(self.xtick_labels)
+        for xtick in plot.xtick_labels:
             if xtick not in all_xticks:
                 all_xticks.append(xtick)
+        newplot.xtick_labels = all_xticks
         # compute new title
         if self.title == "" and plot.title != "":
             title = plot.title
@@ -159,26 +122,12 @@ class Plot:
             title = ""
         else:
             title = self.title + " + " + plot.title
-        return Plot(all_xs, all_ys,
-                    xlabel=self.xlabel,
-                    ylabel=self.ylabel,
-                    title=title,
-                    horizontal_lines=all_hor_lines,
-                    vertical_lines=all_ver_lines,
-                    horizontal_linestyles=all_hor_styles,
-                    vertical_linestyles=all_ver_styles,
-                    linestyle=alllinestyles,
-                    color=allcolors,
-                    xticks_labels=all_xticks,
-                    curve_labels=allcurvelabels)
+        newplot.title = title
+        return newplot
 
     def plot(self,
              show_legend=True,
-             legend_outside=True,
-             vertical_linestyle="--",
-             horizontal_linestyle="--",
-             vertical_color="k",
-             horizontal_color="k"):
+             legend_outside=True):
         """Method to plot the figure.
 
         Parameters
@@ -188,31 +137,20 @@ class Plot:
         legend_outside : bool, optional
                          If True, the legend (if displayed) will be drawn
                          outside graph.
-        vertical_color : str, optional
-                         Gives the vertical line color.
-        horizontal_color : str, optional
-                           Gives the horizontal line color.
         """
         self._fig = plt.figure()
         ax = self._fig.add_subplot(111)
-        for xdata, curve, color, linestyle, label in zip(self.xdata,
-                                                         self.ydata,
-                                                         self.colors,
-                                                         self.linestyles,
-                                                         self.curve_labels):
-            ax.plot(xdata, curve, color=color, linestyle=linestyle,
-                    label=label)
-        for hline, linestyle in zip(self.horizontal_lines,
-                                    self.horizontal_linestyles):
-            ax.axhline(hline, color=horizontal_color,
-                       linestyle=linestyle)
-        for vline, linestyle in zip(self.vertical_lines,
-                                    self.vertical_linestyles):
-            ax.axvline(vline, color=vertical_color,
-                       linestyle=linestyle)
-        if self.xticks_labels is not None:
-            ticks_loc = [x[0] for x in self.xticks_labels]
-            ticks_labels = [x[1] for x in self.xticks_labels]
+        # plot curves and lines
+        for curve in self._curves:
+            curve.plot_on_axis(ax)
+        for hline in self._hlines:
+            hline.plot_on_axis(ax)
+        for vline in self._vlines:
+            vline.plot_on_axis(ax)
+        # set ticks
+        if self.xtick_labels is not None:
+            ticks_loc = [x[0] for x in self.xtick_labels]
+            ticks_labels = [x[1] for x in self.xtick_labels]
             ax.set_xticks(ticks_loc)
             ax.set_xticklabels(ticks_labels)
         # set title and axis labels
@@ -220,8 +158,9 @@ class Plot:
         ax.set_xlabel(self.xlabel)
         ax.set_ylabel(self.ylabel)
         # show legend if needed and if at least one curve_labels is not None
+        all_labels = [c.label for c in self._curves]
         if show_legend and not all([True if x is None else False
-                                    for x in self.curve_labels]):
+                                    for x in all_labels]):
             if legend_outside:
                 ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))
             else:
@@ -236,3 +175,72 @@ class Plot:
     def reset(self):
         del self._fig
         self._fig = None
+
+
+class Curve:
+    """Class that represents a curve."""
+
+    def __init__(self, xdata, ydata, linestyle="-", color="k", label=None):
+        """Curve init method.
+
+        Parameters
+        ----------
+        x_data : array-like
+                 x-data points.
+        y_data : array-like
+                 y-data points.
+        linestyle : str, optional
+                    Curve linestyle.
+        color : str, optional
+                Curve color.
+        label : str, optional
+                Curve label. None = no label.
+        """
+        self.xdata = self._check_list(xdata)
+        self.ydata = self._check_list(ydata)
+        if len(self.xdata) != len(self.ydata):
+            raise ValueError("xdata and ydata must be same length!")
+        self.linestyle = linestyle
+        self.color = color
+        self.label = label
+
+    def _check_list(self, data):
+        # check if arguments are array-like and return numpy arrays
+        if type(data) not in (np.ndarray, list, tuple):
+            raise TypeError("Argument should be array-like.")
+        if isinstance(data, np.ndarray):
+            if len(data.shape) >= 2:
+                raise TypeError("Argument is > 1D data!")
+        return np.array(data)
+
+    def plot_on_axis(self, axis):
+        axis.plot(self.xdata,
+                  self.ydata,
+                  linestyle=self.linestyle,
+                  color=self.color,
+                  label=self.label)
+
+
+class StraightLine(abc.ABC):
+    def __init__(self, pos, linestyle="-", color="k"):
+        self.position = pos
+        self.linestyle = linestyle
+        self.color = color
+
+    @abc.abstractmethod
+    def plot_on_axis(self, *args, **kwargs):
+        pass
+
+
+class VLine(StraightLine):
+    def plot_on_axis(self, axis):
+        axis.axvline(self.position,
+                     linestyle=self.linestyle,
+                     color=self.color)
+
+
+class HLine(StraightLine):
+    def plot_on_axis(self, axis):
+        axis.axhline(self.position,
+                     linestyle=self.linestyle,
+                     color=self.color)
