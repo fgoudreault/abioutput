@@ -46,7 +46,10 @@ class Bandstructure:
              line_at_zero=True,
              save_at=None, show=True,
              high_sym_vlines=True,
-             other_k_labels=None, **kwargs):
+             other_k_labels=None,
+             ylabel="Energy",
+             color="k",
+             linestyle="-"):
         """Plot the bandstructure.
 
         Parameters
@@ -60,6 +63,10 @@ class Bandstructure:
         bands: list, optional
                Selects the range of bands to plot (starting from 0).
                If set to None, all bands are shown.
+        color : str, optional
+                Band curve colors.
+        linestyle : str, optional
+                    Band curve linestyles.
         high_sym_vlines : bool, optional
                           If True, plain vertical lines will be shown
                           at the high symetry points.
@@ -67,31 +74,31 @@ class Bandstructure:
                  If not None, gives the path to where the figure will be saved.
         show: bool, optional
               If True, the plot will be shown.
-        kwargs : All other arguments are passed to the Plot class.
+        ylabel : str, optional
+                 ylabel for the plot.
         """
         considered_bands = self.bands
         fermi_energy = self.fermi_energy
         if self.fermi_energy is None:
             fermi_energy = 0
-        horizontal_lines = []
-        if line_at_zero:
-            horizontal_lines.append(0)
         if bands is not None:
             considered_bands = self.bands[range(bands[0], bands[1] + 1), :]
         ys = considered_bands - fermi_energy
         xs = list(range(len(self.kpts)))
         labels, labels_loc = self._get_sym_pts_labels(symmetry)
-        xtickslabels = [(pos, label) for pos, label in zip(labels_loc, labels)]
-        vertical_lines = kwargs.pop("vertical_lines", [])
-        vertical_linestyles = kwargs.pop("vertical_linestyle", [])
+
+        plot = Plot()
+        plot.ylabel = ylabel
+        for band in ys:
+            plot.add_curve(xs, band, color=color, linestyle=linestyle)
+        plot.xtick_labels = [(pos, label) for pos, label in
+                             zip(labels_loc, labels)]
+        if line_at_zero:
+            plot.add_hline(0, linestyle="--")
         if high_sym_vlines:
-            vertical_lines += labels_loc
-            vertical_linestyles += ["-"] * len(labels_loc)
-        plot = Plot(xs, ys, xticks_labels=xtickslabels,
-                    horizontal_lines=horizontal_lines,
-                    vertical_lines=vertical_lines,
-                    vertical_linestyles=vertical_linestyles,
-                    **kwargs)
+            for pos in labels_loc:
+                plot.add_vline(pos)
+
         if show:
             plot.plot()
         if save_at is not None:
